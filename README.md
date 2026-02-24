@@ -45,8 +45,16 @@ const localFirebaseConfig = {
 
 ---
 
+## Google Drive como Alternativa
+Se você preferir não usar o Firebase Storage, você pode usar vídeos do Google Drive:
+1. Faça o upload do vídeo no Google Drive.
+2. Clique com o botão direito -> **Compartilhar** -> Mude para **Qualquer pessoa com o link**.
+3. Copie o link e cole no campo "URL Direta do Vídeo" no painel de administração.
+4. O site detectará automaticamente o link e o exibirá usando um player integrado.
+
 ## Funcionalidades
 - **Player Imersivo**: Clique para ver em tela cheia.
-- **Hospedagem de Vídeo**: Suba vídeos (.mp4) diretamente pelo painel admin.
+- **Hospedagem de Vídeo**: Suba vídeos (.mp4) diretamente pelo painel admin para o Firebase Storage.
+- **Suporte a Google Drive**: Funciona automaticamente com links de compartilhamento do Drive.
 - **Painel Admin**: Altere a senha e o vídeo exibido em tempo real.
 - **Modo Demo**: O site guia você através da configuração caso o Firebase ainda não esteja conectado.

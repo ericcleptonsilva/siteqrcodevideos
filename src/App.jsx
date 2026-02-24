@@ -58,6 +58,9 @@ export default function App() {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
 
+  const isGoogleDrive = videoConfig.url.includes('drive.google.com');
+  const driveUrl = isGoogleDrive ? videoConfig.url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview') : '';
+
   // Estados de Upload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -335,8 +338,9 @@ export default function App() {
                     <QrCode size={18} /> Guia de Uso
                   </h3>
                   <p className="mb-2 text-slate-300"><strong>Hospedagem:</strong> Use o botão de upload acima para subir vídeos diretamente para o seu Firebase Storage.</p>
+                  <p className="mb-2 text-slate-300"><strong>Google Drive:</strong> Cole o link de compartilhamento normal. O site converterá automaticamente para o formato de player.</p>
                   <p className="mb-2 text-slate-300"><strong>Configuração:</strong> Ative o login anônimo e as regras de Storage/Firestore no Firebase Console.</p>
-                  <p className="text-slate-300 italic">Após o upload, não esqueça de clicar em "Guardar Alterações" para salvar o link permanentemente.</p>
+                  <p className="text-slate-300 italic">Após o upload ou alteração de link, clique em "Guardar Alterações" para salvar permanentemente.</p>
                 </div>
               </div>
             </div>
@@ -397,18 +401,28 @@ export default function App() {
         </div>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            src={videoConfig.url}
-            className="w-full h-full object-contain md:object-cover"
-            playsInline
-            loop
-            onClick={handleStartVideo}
-          />
+          {isGoogleDrive ? (
+            <iframe
+              src={driveUrl}
+              className="w-full h-full border-0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={videoConfig.url}
+              className="w-full h-full object-contain md:object-cover"
+              playsInline
+              loop
+              onClick={handleStartVideo}
+            />
+          )}
+
           <div
             className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-50 transition-opacity duration-700 cursor-pointer"
             onClick={(e) => {
-              handleStartVideo();
+              if (!isGoogleDrive) handleStartVideo();
               e.currentTarget.style.opacity = '0';
               setTimeout(() => e.currentTarget.style.display = 'none', 700);
             }}
