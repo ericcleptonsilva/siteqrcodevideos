@@ -24,10 +24,16 @@ const firebaseConfig = typeof __firebase_config !== 'undefined'
   ? JSON.parse(__firebase_config)
   : localFirebaseConfig;
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+let app, auth, db, storage;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} catch (e) {
+  console.error("Firebase initialization failed:", e);
+}
+
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'video-player-app';
 
 export default function App() {
@@ -55,6 +61,7 @@ export default function App() {
 
   // 1. Autenticação (REGRA 3: Auth antes de Queries)
   useEffect(() => {
+    if (!auth) return;
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -74,7 +81,7 @@ export default function App() {
 
   // 2. Sincronização de Dados (REGRA 1: Caminhos Estritos)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) return;
 
     // /artifacts/{appId}/public/data/{collectionName}/{documentId}
     const configDoc = doc(db, 'artifacts', appId, 'public', 'data', 'video_settings', 'main_config');
@@ -107,7 +114,7 @@ export default function App() {
   }, [user]);
 
   const saveConfig = async () => {
-    if (!user) return;
+    if (!user || !db) return;
     setStatus('A guardar...');
     try {
       const configDoc = doc(db, 'artifacts', appId, 'public', 'data', 'video_settings', 'main_config');
@@ -132,7 +139,7 @@ export default function App() {
   };
 
   const handleFileUpload = () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !storage) return;
 
     setIsUploading(true);
     setStatus('Iniciando upload...');
@@ -328,6 +335,11 @@ export default function App() {
   // UI DO PLAYER
   return (
     <div ref={containerRef} className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden relative font-sans">
+      {!auth && (
+        <div className="absolute top-4 left-4 z-[100] bg-red-500/20 text-red-400 p-4 rounded-xl border border-red-500/30 text-xs">
+          Erro: Firebase não configurado corretamente. Verifique as credenciais no Console do Firebase.
+        </div>
+      )}
       {!videoConfig.url ? (
         <div className="text-center p-10">
           <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
