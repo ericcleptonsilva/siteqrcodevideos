@@ -43,6 +43,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'video-player-app';
 export default function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('player');
+  const [showOverlay, setShowOverlay] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
@@ -52,19 +53,28 @@ export default function App() {
     adminPassword: 'admin',
     autoPlay: true
   });
+  const [urlOverride, setUrlOverride] = useState(null);
   const [inputUrl, setInputUrl] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [status, setStatus] = useState('');
   const videoRef = useRef(null);
   const containerRef = useRef(null);
 
-  const isGoogleDrive = videoConfig.url.includes('drive.google.com');
-  const driveUrl = isGoogleDrive ? videoConfig.url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview') : '';
+  const currentUrl = urlOverride || videoConfig.url;
+  const isGoogleDrive = currentUrl.includes('drive.google.com');
+  const driveUrl = isGoogleDrive ? currentUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview') : '';
 
   // Estados de Upload
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // 0. Captura de URL via Query Parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('v') || params.get('url');
+    if (v) setUrlOverride(v);
+  }, []);
 
   // 1. Autenticação (REGRA 3: Auth antes de Queries)
   useEffect(() => {
@@ -178,8 +188,9 @@ export default function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Allow demo access if not configured, otherwise check password
-    if (!isConfigured || passwordAttempt === videoConfig.adminPassword) {
+    // Allow demo access if not configured, or if no password is set, otherwise check password
+    const noPassword = !videoConfig.adminPassword || videoConfig.adminPassword === '';
+    if (!isConfigured || noPassword || passwordAttempt === videoConfig.adminPassword) {
       setIsAuthorized(true);
       setPasswordAttempt('');
       setStatus('');
@@ -229,7 +240,7 @@ export default function App() {
               type="password"
               value={passwordAttempt}
               onChange={(e) => setPasswordAttempt(e.target.value)}
-              placeholder="Senha de acesso"
+              placeholder={!videoConfig.adminPassword ? "Sem senha (clique Entrar)" : "Senha de acesso"}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 mb-4 text-center focus:ring-2 focus:ring-blue-500 outline-none"
               autoFocus
             />
@@ -319,7 +330,7 @@ export default function App() {
                       type="text"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Nova senha"
+                      placeholder="Deixe em branco para remover a senha"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
@@ -356,7 +367,14 @@ export default function App() {
   // UI DO PLAYER
   return (
     <div ref={containerRef} className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden relative font-sans">
-      {!isConfigured && view === 'player' && (
+      {/* Indicador de Modo de Demonstração (Sutil) */}
+      {!isConfigured && (
+        <div className="absolute top-4 left-4 z-[60] bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] text-white/50 uppercase tracking-widest pointer-events-none">
+          Demo Mode
+        </div>
+      )}
+
+      {!isConfigured && view === 'player' && !urlOverride && (
         <div className="absolute inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-6 text-center">
           <div className="max-w-md bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
             <div className="bg-amber-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -396,7 +414,7 @@ export default function App() {
         </div>
       )}
 
-      {!videoConfig.url ? (
+      {!currentUrl ? (
         <div className="text-center p-10">
           <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-slate-400">Aguardando configuração do vídeo...</p>
@@ -414,7 +432,7 @@ export default function App() {
           ) : (
             <video
               ref={videoRef}
-              src={videoConfig.url}
+              src={currentUrl}
               className="w-full h-full object-contain md:object-cover"
               playsInline
               loop
@@ -422,24 +440,41 @@ export default function App() {
             />
           )}
 
-          <div
-            className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-50 transition-opacity duration-700 cursor-pointer"
-            onClick={(e) => {
-              if (!isGoogleDrive) handleStartVideo();
-              e.currentTarget.style.opacity = '0';
-              setTimeout(() => e.currentTarget.style.display = 'none', 700);
-            }}
-          >
-            <div className="bg-white/10 backdrop-blur-xl p-10 rounded-full border border-white/20 hover:scale-105 transition-transform active:scale-95 shadow-2xl">
-              <Play fill="white" size={48} className="text-white ml-1" />
+          {showOverlay && (
+            <div
+              className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-50 transition-opacity duration-700 cursor-pointer"
+              onClick={() => {
+                if (!isGoogleDrive) handleStartVideo();
+                setShowOverlay(false);
+              }}
+            >
+              <div className="bg-white/10 backdrop-blur-xl p-10 rounded-full border border-white/20 hover:scale-105 transition-transform active:scale-95 shadow-2xl">
+                <Play fill="white" size={48} className="text-white ml-1" />
+              </div>
+              <p className="text-white mt-8 font-bold text-lg tracking-widest uppercase animate-pulse">Assistir Vídeo</p>
+              <p className="text-slate-400 text-xs mt-2 italic text-center px-6">Toque para ver em tela cheia imersiva</p>
             </div>
-            <p className="text-white mt-8 font-bold text-lg tracking-widest uppercase animate-pulse">Assistir Vídeo</p>
-            <p className="text-slate-400 text-xs mt-2 italic text-center px-6">Toque para ver em tela cheia imersiva</p>
-          </div>
+          )}
 
           <div className="absolute bottom-6 right-6 flex gap-3 z-40 opacity-20 hover:opacity-100 transition-opacity">
-            <button onClick={toggleFullScreen} className="bg-black/60 backdrop-blur-md p-3 rounded-full border border-white/10 text-white hover:bg-white/20"><Maximize size={20} /></button>
-            <button onClick={() => { setIsAuthorized(false); setView('admin'); }} className="bg-black/60 backdrop-blur-md p-3 rounded-full border border-white/10 text-white hover:bg-white/20"><Settings size={20} /></button>
+            <button
+              onClick={toggleFullScreen}
+              aria-label="Tela Cheia"
+              className="bg-black/60 backdrop-blur-md p-3 rounded-full border border-white/10 text-white hover:bg-white/20"
+            >
+              <Maximize size={20} />
+            </button>
+            <button
+              onClick={() => {
+                if (!isConfigured || !videoConfig.adminPassword) setIsAuthorized(true);
+                else setIsAuthorized(false);
+                setView('admin');
+              }}
+              aria-label="Configurações"
+              className="bg-black/60 backdrop-blur-md p-3 rounded-full border border-white/10 text-white hover:bg-white/20"
+            >
+              <Settings size={20} />
+            </button>
           </div>
         </>
       )}
