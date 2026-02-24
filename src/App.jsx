@@ -263,10 +263,10 @@ export default function App() {
               <div className="space-y-4">
                 <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
                   <h3 className="text-sm font-bold text-blue-400 uppercase mb-4 flex items-center gap-2">
-                    <Upload size={16} /> Hospedagem de Vídeo
+                    <Upload size={16} /> Opção 1: Upload para Firebase
                   </h3>
                   <div className="mb-6">
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Carregar arquivo local</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2 text-slate-400">Hospedar arquivo de vídeo local</label>
                     <div className="flex flex-col gap-3">
                       <input
                         type="file"
@@ -297,14 +297,17 @@ export default function App() {
 
                   <div className="border-t border-slate-700 my-6 pt-6"></div>
 
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">URL Direta do Vídeo (.mp4)</label>
+                  <h3 className="text-sm font-bold text-blue-400 uppercase mb-4 flex items-center gap-2">
+                    <LinkIcon size={16} /> Opção 2: Importar do Drive ou Link
+                  </h3>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2 text-slate-400">Cole o link do Google Drive ou link direto .mp4</label>
                   <div className="relative mb-6">
                     <LinkIcon className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
                     <input
                       type="text"
                       value={inputUrl}
                       onChange={(e) => setInputUrl(e.target.value)}
-                      placeholder="https://exemplo.com/video.mp4"
+                      placeholder="Cole o link aqui..."
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
