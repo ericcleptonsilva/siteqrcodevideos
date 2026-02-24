@@ -24,14 +24,18 @@ const firebaseConfig = typeof __firebase_config !== 'undefined'
   ? JSON.parse(__firebase_config)
   : localFirebaseConfig;
 
+const isConfigured = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== "";
+
 let app, auth, db, storage;
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} catch (e) {
-  console.error("Firebase initialization failed:", e);
+if (isConfigured) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (e) {
+    console.error("Firebase initialization failed:", e);
+  }
 }
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'video-player-app';
@@ -171,7 +175,8 @@ export default function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (passwordAttempt === videoConfig.adminPassword) {
+    // Allow demo access if not configured, otherwise check password
+    if (!isConfigured || passwordAttempt === videoConfig.adminPassword) {
       setIsAuthorized(true);
       setPasswordAttempt('');
       setStatus('');
@@ -202,6 +207,14 @@ export default function App() {
   if (view === 'admin') {
     return (
       <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center justify-center font-sans">
+        {!isConfigured && (
+          <div className="mb-8 bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center gap-4 max-w-2xl w-full">
+            <HelpCircle className="text-amber-400 shrink-0" />
+            <div className="text-xs text-amber-200/70">
+              <strong>Modo de Demonstração:</strong> O Firebase não está configurado. O upload e salvamento de configurações não funcionarão até que as credenciais sejam adicionadas ao código.
+            </div>
+          </div>
+        )}
         {!isAuthorized ? (
           <form onSubmit={handleLogin} className="w-full max-w-sm bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl text-center">
             <div className="bg-blue-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -261,11 +274,11 @@ export default function App() {
                       {selectedFile && (
                         <button
                           onClick={handleFileUpload}
-                          disabled={isUploading}
+                          disabled={isUploading || !isConfigured}
                           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50"
                         >
                           {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-                          {isUploading ? `Enviando (${uploadProgress}%)` : 'Começar Upload'}
+                          {isUploading ? `Enviando (${uploadProgress}%)` : isConfigured ? 'Começar Upload' : 'Upload Indisponível (Sem Firebase)'}
                         </button>
                       )}
                       {isUploading && (
@@ -307,9 +320,10 @@ export default function App() {
 
                   <button
                     onClick={saveConfig}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+                    disabled={!isConfigured}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                   >
-                    <Save size={20} /> Guardar Alterações
+                    <Save size={20} /> {isConfigured ? 'Guardar Alterações' : 'Guardar Indisponível'}
                   </button>
                   {status && <p className="mt-3 text-center text-sm text-green-400">{typeof status === 'string' ? status : ''}</p>}
                 </div>
@@ -335,11 +349,46 @@ export default function App() {
   // UI DO PLAYER
   return (
     <div ref={containerRef} className="h-screen w-screen bg-black flex items-center justify-center overflow-hidden relative font-sans">
-      {!auth && (
-        <div className="absolute top-4 left-4 z-[100] bg-red-500/20 text-red-400 p-4 rounded-xl border border-red-500/30 text-xs">
-          Erro: Firebase não configurado corretamente. Verifique as credenciais no Console do Firebase.
+      {!isConfigured && view === 'player' && (
+        <div className="absolute inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-6 text-center">
+          <div className="max-w-md bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
+            <div className="bg-amber-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Settings className="text-amber-400" size={32} />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4">Configuração Pendente</h2>
+            <p className="text-slate-400 mb-6 text-sm">
+              Para começar a hospedar seus próprios vídeos, você precisa conectar seu projeto ao Firebase.
+            </p>
+            <div className="space-y-3 text-left mb-8">
+              <div className="flex gap-3 text-xs text-slate-300">
+                <span className="bg-slate-700 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white">1</span>
+                <span>Crie um projeto no <a href="https://console.firebase.google.com/" target="_blank" className="text-blue-400 underline">Console do Firebase</a></span>
+              </div>
+              <div className="flex gap-3 text-xs text-slate-300">
+                <span className="bg-slate-700 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white">2</span>
+                <span>Ative Authentication (Anônimo), Firestore e Storage</span>
+              </div>
+              <div className="flex gap-3 text-xs text-slate-300">
+                <span className="bg-slate-700 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-white">3</span>
+                <span>Copie as credenciais para o objeto <code>localFirebaseConfig</code> no código</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setView('admin')}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all"
+            >
+              Aceder ao Painel (Demo)
+            </button>
+          </div>
         </div>
       )}
+
+      {isConfigured && !auth && (
+        <div className="absolute top-4 left-4 z-[100] bg-red-500/20 text-red-400 p-4 rounded-xl border border-red-500/30 text-xs">
+          Erro: Falha ao inicializar Firebase. Verifique o console para detalhes.
+        </div>
+      )}
+
       {!videoConfig.url ? (
         <div className="text-center p-10">
           <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
