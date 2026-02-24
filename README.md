@@ -1,16 +1,52 @@
-# React + Vite
+# Site de Vídeos Escolar com Hospedagem Própria
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este projeto é um site para exibir vídeos que podem ser hospedados diretamente no seu próprio Firebase Storage. Ele inclui um player de vídeo e um painel de administração protegido por senha.
 
-Currently, two official plugins are available:
+## Como Configurar o Firebase
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Para que o site funcione (upload e sincronização de configurações), você precisa conectar seu próprio projeto Firebase. Siga estes passos:
 
-## React Compiler
+### 1. Criar Projeto no Firebase
+1. Vá para o [Console do Firebase](https://console.firebase.google.com/).
+2. Clique em "Adicionar projeto" e siga as instruções.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Ativar Serviços Necessários
+No menu lateral do console do Firebase, ative:
+- **Authentication**: Vá em "Sign-in method" e ative o provedor **Anônimo**.
+- **Firestore Database**: Clique em "Criar banco de dados". Comece em "Modo de teste" para desenvolvimento inicial.
+- **Cloud Storage**: Clique em "Começar agora". Comece em "Modo de teste" para permitir uploads.
 
-## Expanding the ESLint configuration
+### 3. Obter Credenciais
+1. No Console do Firebase, clique no ícone de engrenagem (Configurações do Projeto).
+2. Na aba "Geral", role para baixo até "Seus aplicativos" e adicione um aplicativo Web (ícone `</>`).
+3. Copie o objeto `firebaseConfig`. Ele se parece com isto:
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "SUA_API_KEY",
+     authDomain: "SEU_PROJETO.firebaseapp.com",
+     projectId: "SEU_PROJETO",
+     storageBucket: "SEU_PROJETO.appspot.com",
+     messagingSenderId: "SEU_ID",
+     appId: "SEU_APP_ID"
+   };
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 4. Configurar no Código
+1. Abra o arquivo `src/App.jsx`.
+2. Localize a constante `localFirebaseConfig` (por volta da linha 13).
+3. Substitua os valores vazios pelas credenciais que você copiou.
+
+```javascript
+const localFirebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  // ... outros campos
+};
+```
+
+---
+
+## Funcionalidades
+- **Player Imersivo**: Clique para ver em tela cheia.
+- **Hospedagem de Vídeo**: Suba vídeos (.mp4) diretamente pelo painel admin.
+- **Painel Admin**: Altere a senha e o vídeo exibido em tempo real.
+- **Modo Demo**: O site guia você através da configuração caso o Firebase ainda não esteja conectado.
